@@ -4,16 +4,21 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.mycamera.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.jar.Manifest
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     // どのようなインテントを呼び出したのかを判別
     val REQUEST_PREVIEW = 1
     val REQUEST_PICTURE = 2
+    val REQUEST_EXTERNAL_STORAGE = 3
 
     lateinit var currentPhotoUri: Uri
 
@@ -31,6 +37,30 @@ class MainActivity : AppCompatActivity() {
         setupBinding()
         setupRadioGroup()
         setupButton()
+        checkStoragePermission()
+    }
+
+    // アクティビティが閉じられると起動する
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        // requestCodeには呼び出した時のコードが入ってくる
+        if (requestCode == REQUEST_PREVIEW && resultCode == RESULT_OK) {
+            // "data"というキーで画像が渡される
+            val imageBitmap = data?.extras?.get("data") as Bitmap
+            binding.imageView.setImageBitmap(imageBitmap)
+        } else if (requestCode == REQUEST_PICTURE) {
+            when(resultCode) {
+                RESULT_OK -> {
+                    Intent(Intent.ACTION_SEND).also { share ->
+                        share.type = "image/*"
+                        share.putExtra(Intent.EXTRA_STREAM, currentPhotoUri)
+                        // createChooser(share, "Share to")はアプリの選択画面の新たなインテント
+                        startActivity(Intent.createChooser(share, "Share to"))
+                    }
+                }
+                else -> { contentResolver.delete(currentPhotoUri, null, null) }
+            }
+        }
     }
 
     private fun setupBinding() {
@@ -108,26 +138,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // アクティビティが閉じられると起動する
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        // requestCodeには呼び出した時のコードが入ってくる
-        if (requestCode == REQUEST_PREVIEW && resultCode == RESULT_OK) {
-            // "data"というキーで画像が渡される
-            val imageBitmap = data?.extras?.get("data") as Bitmap
-            binding.imageView.setImageBitmap(imageBitmap)
-        } else if (requestCode == REQUEST_PICTURE) {
-            when(resultCode) {
-                RESULT_OK -> {
-                    Intent(Intent.ACTION_SEND).also { share ->
-                        share.type = "image/*"
-                        share.putExtra(Intent.EXTRA_STREAM, currentPhotoUri)
-                        // createChooser(share, "Share to")はアプリの選択画面の新たなインテント
-                        startActivity(Intent.createChooser(share, "Share to"))
-                    }
-                }
-                else -> { contentResolver.delete(currentPhotoUri, null, null) }
+    private fun checkStoragePermission() {
+        // 権限確認ウィンドウ表示
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            storagePermission()
+        }
+    }
+
+    private fun storagePermission() {
+        var permission = ContextCompat.checkSelfPermission(
+            this,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                REQUEST_EXTERNAL_STORAGE
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when(requestCode) {
+            REQUEST_EXTERNAL_STORAGE -> {
+                binding.cameraButton.isEnabled = grantResults.isNotEmpty() &&
+                        grantResults[0] == PackageManager.PERMISSION_GRANTED
             }
         }
     }
+
 }
