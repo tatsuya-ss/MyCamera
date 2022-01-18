@@ -118,7 +118,14 @@ class MainActivity : AppCompatActivity() {
             binding.imageView.setImageBitmap(imageBitmap)
         } else if (requestCode == REQUEST_PICTURE) {
             when(resultCode) {
-                RESULT_OK -> { }
+                RESULT_OK -> {
+                    Intent(Intent.ACTION_SEND).also { share ->
+                        share.type = "image/*"
+                        share.putExtra(Intent.EXTRA_STREAM, currentPhotoUri)
+                        // createChooser(share, "Share to")はアプリの選択画面の新たなインテント
+                        startActivity(Intent.createChooser(share, "Share to"))
+                    }
+                }
                 else -> { contentResolver.delete(currentPhotoUri, null, null) }
             }
         }
