@@ -2,20 +2,27 @@ package com.example.mycamera
 
 import android.app.Activity
 import android.app.Instrumentation
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.mycamera.databinding.ActivityMainBinding
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
     // アプリ内で決めたコード
     // どのようなインテントを呼び出したのかを判別
     val REQUEST_PREVIEW = 1
+    val REQUEST_PICTURE = 2
+
+    lateinit var currentPhotoUri: Uri
 
     private lateinit var binding: ActivityMainBinding
 
@@ -65,8 +72,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//    private fun newPreview() {
-//
+    private fun newPreview() {
+
 //        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { intent ->
 //            intent.resolveActivity(packageManager)?.also {
 //                val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult? ->
@@ -79,8 +86,27 @@ class MainActivity : AppCompatActivity() {
 //                resultLauncher.launch(intent)
 //            }
 //        }
-//    }
-    private fun takePicture() { }
+    }
+
+    private fun takePicture() {
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { intent ->
+            intent.resolveActivity(packageManager)?.also {
+                val time: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
+                val values = ContentValues().apply {
+                    // MediaStore.Images.Mediaは画像格納の外部ストレージ
+                    put(MediaStore.Images.Media.DISPLAY_NAME, "${time}_.jpg")
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                }
+                val collection = MediaStore.Images.Media.getContentUri("external")
+                val photoUri = contentResolver.insert(collection, values)
+                photoUri?.let {
+                    currentPhotoUri = it
+                }
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+                startActivityForResult(intent, REQUEST_PICTURE)
+            }
+        }
+    }
 
     // アクティビティが閉じられると起動する
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
