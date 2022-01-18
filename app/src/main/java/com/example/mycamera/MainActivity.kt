@@ -116,6 +116,11 @@ class MainActivity : AppCompatActivity() {
             // "data"というキーで画像が渡される
             val imageBitmap = data?.extras?.get("data") as Bitmap
             binding.imageView.setImageBitmap(imageBitmap)
+        } else if (requestCode == REQUEST_PICTURE) {
+            when(resultCode) {
+                RESULT_OK -> { }
+                else -> { contentResolver.delete(currentPhotoUri, null, null) }
+            }
         }
     }
 }
