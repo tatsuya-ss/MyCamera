@@ -64,6 +64,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+//    private fun newPreview() {
+//
+//        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { intent ->
+//            intent.resolveActivity(packageManager)?.also {
+//                val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult? ->
+//                    if (result?.resultCode == Activity.RESULT_OK) {
+//                        val intent: Intent? = result.data
+//                        val imageBitmap = intent?.extras?.get("data") as Bitmap
+//                        binding.imageView.setImageBitmap(imageBitmap)
+//                    }
+//                }
+//                resultLauncher.launch(intent)
+//            }
+//        }
+//    }
     private fun takePicture() { }
 
     // アクティビティが閉じられると起動する
